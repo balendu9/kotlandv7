@@ -13,25 +13,24 @@ contract QuestContract is ReentrancyGuard {
     using SafeERC20 for IERC20;
     
     Users public userContract;
-    RegionNFT public tilecontract;
+    RegionNFT public regioncontract;
     Compute public computecontract;
     IERC20 public token;
 
     constructor() {
-        admin = msg.sender;
-         
+        admin = msg.sender;   
     }
 
     function setContracts(
         address _userContract,
-        address _tilecontractaddress,
+        address _regioncontractaddress,
         address _computecontract,
         address _token
     ) external {
         require(msg.sender == admin, "NOT_AUTHORIZED");
      
         userContract = Users(_userContract);
-        tilecontract = RegionNFT(_tilecontractaddress);
+        regioncontract = RegionNFT(_regioncontractaddress);
         computecontract = Compute(_computecontract);
         token = IERC20(_token);
     }
@@ -65,7 +64,7 @@ contract QuestContract is ReentrancyGuard {
             uint8 growthStage
         )
     {
-        return tilecontract.getTileData(regionId, tileId);
+        return regioncontract.getTileData(regionId, tileId);
     }
 
     function fetchRegionInfo(
@@ -81,7 +80,7 @@ contract QuestContract is ReentrancyGuard {
             uint256 lastupdate
         )
     {
-        return tilecontract.getRegionMeta(regionId);
+        return regioncontract.getRegionMeta(regionId);
     }
 
  
@@ -113,7 +112,6 @@ contract QuestContract is ReentrancyGuard {
         token.safeTransfer(msg.sender, amount);
     }
 
-   
 
     uint256 public cropPrice = 50000 * 10 ** 18;
 
@@ -127,7 +125,7 @@ contract QuestContract is ReentrancyGuard {
         token.safeTransferFrom(msg.sender, address(this), cropPrice);
         _handleReferralReward(cropPrice, 5);
 
-        tilecontract.setCropOrFactory(
+        regioncontract.setCropOrFactory(
             true,
             tileId,
             cropTypeId,
@@ -136,6 +134,7 @@ contract QuestContract is ReentrancyGuard {
         );
         recordAction(msg.sender, 1);
         userContract.updateUserExp(msg.sender, 7);
+        userContract.croporfactorytxn(msg.sender, true, cropPrice, true, tileId);
         emit CropPlanted(msg.sender, regionId, tileId, cropTypeId);
     }
 
@@ -151,7 +150,7 @@ contract QuestContract is ReentrancyGuard {
         token.safeTransferFrom(msg.sender, address(this), factoryPrice);
         _handleReferralReward(factoryPrice, 2);
 
-        tilecontract.setCropOrFactory(
+        regioncontract.setCropOrFactory(
             false,
             tileId,
             _factoryTypeId,
@@ -160,6 +159,8 @@ contract QuestContract is ReentrancyGuard {
         );
         recordAction(msg.sender, 2);
         userContract.updateUserExp(msg.sender, 13);
+        userContract.croporfactorytxn(msg.sender, false, factoryPrice, true, tileId);
+        
 
         emit FactoryBuilt(msg.sender, regionId, tileId, _factoryTypeId);
 
@@ -198,7 +199,7 @@ contract QuestContract is ReentrancyGuard {
             msg.sender
         );
         // uint8 _cropType, uint8 _fertility, uint8 _waterlevel, uint8 _ecoscore, uint8 _pollutionlevel, bool worf, address _user
-        tilecontract.updateWFG(tileId, true, growth, regionId, msg.sender);
+        regioncontract.updateWFG(tileId, true, growth, regionId, msg.sender);
 
         userContract.updateUserExp(msg.sender, 2);
         emit CropWatered(msg.sender, regionId, tileId);
@@ -217,21 +218,21 @@ contract QuestContract is ReentrancyGuard {
             uint8 waterLevel,
 
         ) = fetchTileInfo(regionId, tileId);
-        require(isBeingUsed && isCrop && fertility <= 100, "INVALID");
-        (uint8 pollution, uint8 fertilityR, , uint8 eco, ) = fetchRegionInfo(
+        require(isBeingUsed && isCrop && fertility < 100, "INVALID");
+        (uint8 pollution, , , uint8 eco, ) = fetchRegionInfo(
             regionId
         );
 
         uint8 growth = computecontract.plantGrowthCalculator(
             cropTypeId,
-            fertilityR,
+            fertility,
             waterLevel,
             eco,
             pollution,
-            true,
+            false,
             msg.sender
         );
-        tilecontract.updateWFG(tileId, false, growth, regionId, msg.sender);
+        regioncontract.updateWFG(tileId, false, growth, regionId, msg.sender);
         userContract.updateUserExp(msg.sender, 4);
         emit CropFertilized(msg.sender, regionId, tileId);
     }
@@ -248,9 +249,10 @@ contract QuestContract is ReentrancyGuard {
             uint8 growthStage
         ) = fetchTileInfo(regionId, tileId);
         require(isBeingUsed && isCrop && growthStage == 100, "INVALID");
-        tilecontract.updateAfterHarvest(tileId, regionId, msg.sender);
+        regioncontract.updateAfterHarvest(tileId, regionId, msg.sender);
         computecontract.getHarvestedResourceAndAmount(cropTypeId, msg.sender);
         recordAction(msg.sender, 3);
+        userContract.croporfactorytxn(msg.sender, true, 100, false, tileId);
         userContract.updateUserExp(msg.sender, 15);
 
         emit CropHarvested(msg.sender, regionId, tileId);

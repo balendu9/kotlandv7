@@ -194,10 +194,6 @@ contract Compute {
         usercontract.updateInventory (admin, 7, 200, true);
         usercontract.updateInventory (admin, 8, 200, true);
     }
-
-    function recordTxns(address _user, bool _corf, uint256 _price, bool _action, uint32 tileId) external internalcontracts{
-        usercontract.croporfactorytxn(_user, _corf, _price, _action, tileId);
-        // croporfactorytxn(address _user, bool corf, uint256 price, bool action, uint32 tileId)
-    }
+ 
 
 }

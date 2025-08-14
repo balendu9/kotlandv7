@@ -26,8 +26,8 @@ contract RegionNFT is ERC721Enumerable, ReentrancyGuard {
     uint256 public totalCrops = 0;
     uint256 public totalFactory = 0;
 
-    uint256 public constant PRICE_KOT = 5000000 * 10 ** 18;
-    uint256 public constant PRICE_ETH = 0.02 ether;
+    uint256 public PRICE_KOT = 5000000 * 10 ** 18;
+    uint256 public PRICE_ETH = 0.02 ether;
 
     string public baseImageURL;
 
@@ -36,12 +36,11 @@ contract RegionNFT is ERC721Enumerable, ReentrancyGuard {
     event TileUpdated(uint256 indexed regionId, uint8 indexed tileId);
     event TreasuryUpdated(address indexed oldTreasury, address indexed newTreasury);
     event QuestsContractUpdated(address indexed oldQ, address indexed newQ);
-
-
-    constructor(address _token, address _treasury, address _quest, string memory _baseurl) ERC721 ("Region", "KREGION") {
+    
+    constructor(address _token, address _quest, string memory _baseurl) ERC721 ("Region", "KREGION") {
         admin = msg.sender;
         token = IERC20(_token);
-        treasury = _treasury;
+        treasury = msg.sender;
         questscontract = _quest;
         baseImageURL = _baseurl;
     }
@@ -180,16 +179,6 @@ contract RegionNFT is ERC721Enumerable, ReentrancyGuard {
         // new = min(100, curr + inc)
     
 
-
-
-// function produceFromFactory(uint256 regionId) external {
-//     // Increase pollution; slightly reduce fertility and water
-//     // pollution +10, fert -3, water -3
-//     _updateRegionMeta(regionId, -3, -3, 10, 300);
-// }
-
-
-
     struct TileData {
         uint32 id;
         bool isBeingUsed;
@@ -308,5 +297,15 @@ contract RegionNFT is ERC721Enumerable, ReentrancyGuard {
         tile.factoryTypeId = 0;
         _updateRegionMeta(regionId, 10, 10, 5, 300);
     } 
+
+    function getRegionTiles(uint256 regionId) external view returns(TileData[9] memory) {
+        return regionTiles[regionId];
+    }
+
+    function updatePrices(uint256 _newPriceKOT, uint256 _newPriceETH) external onlyAdmin {
+        PRICE_ETH = _newPriceETH;
+        PRICE_KOT = _newPriceKOT;
+
+    }
     
 }
